@@ -8,6 +8,7 @@ SRC_DIR="${ROOT_DIR}/openwrt"
 INCLUDE_QMODEM="${INCLUDE_QMODEM:-false}"
 INCLUDE_PASSWALL="${INCLUDE_PASSWALL:-false}"
 INCLUDE_MOSDNS="${INCLUDE_MOSDNS:-false}"
+INCLUDE_MOSDNS_LUCI="${INCLUDE_MOSDNS_LUCI:-false}"
 INCLUDE_UPNP="${INCLUDE_UPNP:-false}"
 INCLUDE_HOMEPROXY="${INCLUDE_HOMEPROXY:-false}"
 
@@ -49,6 +50,24 @@ if [ "${INCLUDE_QMODEM}" = "true" ]; then
   append_feed_once "src-git qmodem https://github.com/FUjr/QModem.git"
 fi
 
+if [ "${INCLUDE_MOSDNS_LUCI}" = "true" ]; then
+  echo "添加第三方 MosDNS LuCI 页面，不替换 ImmortalWrt 官方 mosdns 本体"
+  MOSDNS_LUCI_CACHE="${ROOT_DIR}/build-cache/sbwml-luci-app-mosdns"
+  MOSDNS_LUCI_PACKAGE_DIR="${SRC_DIR}/package/h5000m-mosdns-luci"
+
+  if [ -d "${MOSDNS_LUCI_CACHE}/.git" ]; then
+    git -C "${MOSDNS_LUCI_CACHE}" fetch --depth=1 origin HEAD
+    git -C "${MOSDNS_LUCI_CACHE}" reset --hard FETCH_HEAD
+  else
+    git clone --depth=1 https://github.com/sbwml/luci-app-mosdns.git "${MOSDNS_LUCI_CACHE}"
+  fi
+
+  rm -rf "${MOSDNS_LUCI_PACKAGE_DIR}"
+  mkdir -p "${MOSDNS_LUCI_PACKAGE_DIR}"
+  cp -a "${MOSDNS_LUCI_CACHE}/luci-app-mosdns" "${MOSDNS_LUCI_PACKAGE_DIR}/luci-app-mosdns"
+  cp -a "${MOSDNS_LUCI_CACHE}/v2dat" "${MOSDNS_LUCI_PACKAGE_DIR}/v2dat"
+fi
+
 echo "写入默认 LAN IP、root 密码和软件源清理脚本"
 mkdir -p "${SRC_DIR}/files/etc/uci-defaults"
 cp "${ROOT_DIR}/files/etc/uci-defaults/99-h5000m-defaults" \
@@ -60,7 +79,7 @@ echo "后续本地编译步骤："
 echo "  cd ${SRC_DIR}"
 echo "  ./scripts/feeds update -a"
 echo "  ./scripts/feeds install -a"
-echo "  INCLUDE_QMODEM=${INCLUDE_QMODEM} INCLUDE_PASSWALL=${INCLUDE_PASSWALL} INCLUDE_MOSDNS=${INCLUDE_MOSDNS} INCLUDE_UPNP=${INCLUDE_UPNP} INCLUDE_HOMEPROXY=${INCLUDE_HOMEPROXY} bash ${ROOT_DIR}/scripts/apply-package-options.sh"
+echo "  INCLUDE_QMODEM=${INCLUDE_QMODEM} INCLUDE_PASSWALL=${INCLUDE_PASSWALL} INCLUDE_MOSDNS=${INCLUDE_MOSDNS} INCLUDE_MOSDNS_LUCI=${INCLUDE_MOSDNS_LUCI} INCLUDE_UPNP=${INCLUDE_UPNP} INCLUDE_HOMEPROXY=${INCLUDE_HOMEPROXY} bash ${ROOT_DIR}/scripts/apply-package-options.sh"
 echo "  make defconfig"
 echo "  make download -j\$(nproc)"
 echo "  make -j\$(nproc)"

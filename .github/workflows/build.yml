@@ -30,7 +30,12 @@ on:
         type: boolean
         default: false
       mosdns:
-        description: 集成 luci-app-mosdns
+        description: 集成 ImmortalWrt 官方 mosdns 本体
+        required: true
+        type: boolean
+        default: false
+      mosdns_luci:
+        description: 集成第三方 luci-app-mosdns 页面；本体仍使用 ImmortalWrt 官方 mosdns，依赖 curl、v2ray-geoip、v2ray-geosite、v2dat
         required: true
         type: boolean
         default: false
@@ -84,6 +89,7 @@ jobs:
           INCLUDE_QMODEM: ${{ inputs.qmodem && 'true' || 'false' }}
           INCLUDE_PASSWALL: ${{ inputs.passwall && 'true' || 'false' }}
           INCLUDE_MOSDNS: ${{ inputs.mosdns && 'true' || 'false' }}
+          INCLUDE_MOSDNS_LUCI: ${{ inputs.mosdns_luci && 'true' || 'false' }}
           INCLUDE_UPNP: ${{ inputs.upnp && 'true' || 'false' }}
           INCLUDE_HOMEPROXY: ${{ inputs.homeproxy && 'true' || 'false' }}
         run: bash ./scripts/prepare-source.sh "${{ inputs.immortalwrt_ref }}"
@@ -99,6 +105,7 @@ jobs:
           INCLUDE_QMODEM: ${{ inputs.qmodem && 'true' || 'false' }}
           INCLUDE_PASSWALL: ${{ inputs.passwall && 'true' || 'false' }}
           INCLUDE_MOSDNS: ${{ inputs.mosdns && 'true' || 'false' }}
+          INCLUDE_MOSDNS_LUCI: ${{ inputs.mosdns_luci && 'true' || 'false' }}
           INCLUDE_UPNP: ${{ inputs.upnp && 'true' || 'false' }}
           INCLUDE_HOMEPROXY: ${{ inputs.homeproxy && 'true' || 'false' }}
         run: bash ./scripts/apply-package-options.sh
@@ -112,6 +119,7 @@ jobs:
           INCLUDE_QMODEM: ${{ inputs.qmodem && 'true' || 'false' }}
           INCLUDE_PASSWALL: ${{ inputs.passwall && 'true' || 'false' }}
           INCLUDE_MOSDNS: ${{ inputs.mosdns && 'true' || 'false' }}
+          INCLUDE_MOSDNS_LUCI: ${{ inputs.mosdns_luci && 'true' || 'false' }}
           INCLUDE_UPNP: ${{ inputs.upnp && 'true' || 'false' }}
           INCLUDE_HOMEPROXY: ${{ inputs.homeproxy && 'true' || 'false' }}
         run: bash ./scripts/verify-package-options.sh
@@ -175,6 +183,7 @@ jobs:
           INCLUDE_QMODEM: ${{ inputs.qmodem && 'true' || 'false' }}
           INCLUDE_PASSWALL: ${{ inputs.passwall && 'true' || 'false' }}
           INCLUDE_MOSDNS: ${{ inputs.mosdns && 'true' || 'false' }}
+          INCLUDE_MOSDNS_LUCI: ${{ inputs.mosdns_luci && 'true' || 'false' }}
           INCLUDE_UPNP: ${{ inputs.upnp && 'true' || 'false' }}
           INCLUDE_HOMEPROXY: ${{ inputs.homeproxy && 'true' || 'false' }}
         run: bash ./scripts/prepare-source.sh "${{ inputs.immortalwrt_ref }}"
@@ -190,6 +199,7 @@ jobs:
           INCLUDE_QMODEM: ${{ inputs.qmodem && 'true' || 'false' }}
           INCLUDE_PASSWALL: ${{ inputs.passwall && 'true' || 'false' }}
           INCLUDE_MOSDNS: ${{ inputs.mosdns && 'true' || 'false' }}
+          INCLUDE_MOSDNS_LUCI: ${{ inputs.mosdns_luci && 'true' || 'false' }}
           INCLUDE_UPNP: ${{ inputs.upnp && 'true' || 'false' }}
           INCLUDE_HOMEPROXY: ${{ inputs.homeproxy && 'true' || 'false' }}
         run: bash ./scripts/apply-package-options.sh
@@ -203,6 +213,7 @@ jobs:
           INCLUDE_QMODEM: ${{ inputs.qmodem && 'true' || 'false' }}
           INCLUDE_PASSWALL: ${{ inputs.passwall && 'true' || 'false' }}
           INCLUDE_MOSDNS: ${{ inputs.mosdns && 'true' || 'false' }}
+          INCLUDE_MOSDNS_LUCI: ${{ inputs.mosdns_luci && 'true' || 'false' }}
           INCLUDE_UPNP: ${{ inputs.upnp && 'true' || 'false' }}
           INCLUDE_HOMEPROXY: ${{ inputs.homeproxy && 'true' || 'false' }}
         run: bash ./scripts/verify-package-options.sh

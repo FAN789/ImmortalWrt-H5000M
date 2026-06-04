@@ -8,6 +8,7 @@ CONFIG_FILE="${SRC_DIR}/.config"
 INCLUDE_QMODEM="${INCLUDE_QMODEM:-false}"
 INCLUDE_PASSWALL="${INCLUDE_PASSWALL:-false}"
 INCLUDE_MOSDNS="${INCLUDE_MOSDNS:-false}"
+INCLUDE_MOSDNS_LUCI="${INCLUDE_MOSDNS_LUCI:-false}"
 INCLUDE_UPNP="${INCLUDE_UPNP:-false}"
 INCLUDE_HOMEPROXY="${INCLUDE_HOMEPROXY:-false}"
 
@@ -61,6 +62,15 @@ fi
 
 if [ "${INCLUDE_MOSDNS}" = "true" ]; then
   require_config "CONFIG_PACKAGE_mosdns"
+fi
+
+if [ "${INCLUDE_MOSDNS_LUCI}" = "true" ]; then
+  require_config "CONFIG_PACKAGE_mosdns"
+  require_config "CONFIG_PACKAGE_luci-app-mosdns"
+  require_config "CONFIG_PACKAGE_v2dat"
+  require_config "CONFIG_PACKAGE_v2ray-geoip"
+  require_config "CONFIG_PACKAGE_v2ray-geosite"
+  require_config "CONFIG_PACKAGE_curl"
 fi
 
 if [ "${INCLUDE_UPNP}" = "true" ]; then

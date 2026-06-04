@@ -8,6 +8,7 @@ CONFIG_FILE="${SRC_DIR}/.config"
 INCLUDE_QMODEM="${INCLUDE_QMODEM:-false}"
 INCLUDE_PASSWALL="${INCLUDE_PASSWALL:-false}"
 INCLUDE_MOSDNS="${INCLUDE_MOSDNS:-false}"
+INCLUDE_MOSDNS_LUCI="${INCLUDE_MOSDNS_LUCI:-false}"
 INCLUDE_UPNP="${INCLUDE_UPNP:-false}"
 INCLUDE_HOMEPROXY="${INCLUDE_HOMEPROXY:-false}"
 
@@ -63,6 +64,18 @@ if [ "${INCLUDE_MOSDNS}" = "true" ]; then
   echo "启用 MosDNS"
   append_config <<'EOF'
 CONFIG_PACKAGE_mosdns=y
+EOF
+fi
+
+if [ "${INCLUDE_MOSDNS_LUCI}" = "true" ]; then
+  echo "启用 MosDNS LuCI 页面及依赖"
+  append_config <<'EOF'
+CONFIG_PACKAGE_mosdns=y
+CONFIG_PACKAGE_luci-app-mosdns=y
+CONFIG_PACKAGE_v2dat=y
+CONFIG_PACKAGE_v2ray-geoip=y
+CONFIG_PACKAGE_v2ray-geosite=y
+CONFIG_PACKAGE_curl=y
 EOF
 fi
 
