@@ -137,6 +137,11 @@ jobs:
             make -j"$(nproc)"
           fi
 
+      - name: 输出失败详情
+        if: ${{ failure() }}
+        working-directory: openwrt
+        run: make -j1 V=s
+
       - name: 上传固件产物
         uses: actions/upload-artifact@v4
         with:
@@ -230,6 +235,11 @@ jobs:
           else
             make -j"$(nproc)"
           fi
+
+      - name: 输出失败详情
+        if: ${{ failure() }}
+        working-directory: openwrt
+        run: make -j1 V=s
 
       - name: 上传固件产物
         uses: actions/upload-artifact@v4

@@ -69,6 +69,14 @@ fi
 
 if [ "${INCLUDE_MOSDNS_LUCI}" = "true" ]; then
   echo "启用 MosDNS LuCI 页面及依赖"
+  MOSDNS_MAKEFILE="${SRC_DIR}/package/feeds/packages/mosdns/Makefile"
+  if [ -f "${MOSDNS_MAKEFILE}" ]; then
+    sed -i \
+      -e '/$(INSTALL_DIR) $(1)\/etc\/init.d/d' \
+      -e '/$(INSTALL_BIN) $(PKG_BUILD_DIR)\/scripts\/openwrt\/mosdns-init-openwrt $(1)\/etc\/init.d\/mosdns/d' \
+      "${MOSDNS_MAKEFILE}"
+    echo "已避免官方 mosdns init 脚本与 luci-app-mosdns 冲突"
+  fi
   append_config <<'EOF'
 CONFIG_PACKAGE_mosdns=y
 CONFIG_PACKAGE_luci-app-mosdns=y
