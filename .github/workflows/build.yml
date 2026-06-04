@@ -8,7 +8,7 @@ on:
         required: true
         default: v25.12.0
       runner_type:
-        description: 编译运行环境；github-hosted 使用 GitHub 托管机，self-hosted 使用你的本地 Runner
+        description: 编译运行环境
         required: true
         type: choice
         default: github-hosted
@@ -46,25 +46,16 @@ on:
         default: false
 
 jobs:
-  build:
-    name: 构建 H5000M 固件
-    runs-on: ${{ inputs.runner_type == 'self-hosted' && 'self-hosted' || 'ubuntu-24.04' }}
+  build-github-hosted:
+    name: GitHub 托管机编译
+    if: inputs.runner_type == 'github-hosted'
+    runs-on: ubuntu-24.04
 
     steps:
       - name: 检出构建项目
         uses: actions/checkout@v4
 
-      - name: 检查本地 Runner 环境
-        if: inputs.runner_type == 'self-hosted'
-        run: |
-          if [ "$(uname -s)" != "Linux" ]; then
-            echo "本地 Runner 必须运行在 Linux/Ubuntu 或 WSL2 环境。"
-            exit 1
-          fi
-          echo "本地 Runner 检查通过。"
-
       - name: 安装编译依赖
-        if: inputs.runner_type == 'github-hosted'
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -79,6 +70,62 @@ jobs:
             python3-docutils python3-pyelftools qemu-utils re2c rsync scons \
             squashfs-tools subversion swig texinfo uglifyjs upx-ucl unzip vim \
             wget xmlto xxd zlib1g-dev zstd
+
+      - name: 准备 ImmortalWrt 源码
+        env:
+          INCLUDE_QMODEM: ${{ inputs.qmodem && 'true' || 'false' }}
+          INCLUDE_PASSWALL: ${{ inputs.passwall && 'true' || 'false' }}
+          INCLUDE_MOSDNS: ${{ inputs.mosdns && 'true' || 'false' }}
+          INCLUDE_UPNP: ${{ inputs.upnp && 'true' || 'false' }}
+          INCLUDE_HOMEPROXY: ${{ inputs.homeproxy && 'true' || 'false' }}
+        run: bash ./scripts/prepare-source.sh "${{ inputs.immortalwrt_ref }}"
+
+      - name: 更新并安装软件源
+        working-directory: openwrt
+        run: |
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+
+      - name: 生成最终配置
+        working-directory: openwrt
+        run: make defconfig
+
+      - name: 下载源码包
+        working-directory: openwrt
+        run: make download -j"$(nproc)"
+
+      - name: 编译固件
+        working-directory: openwrt
+        run: |
+          if [ -n "${{ inputs.make_jobs }}" ]; then
+            make -j"${{ inputs.make_jobs }}"
+          else
+            make -j"$(nproc)"
+          fi
+
+      - name: 上传固件产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: immortalwrt-h5000m-${{ inputs.immortalwrt_ref }}
+          path: |
+            openwrt/bin/targets/mediatek/filogic/*
+
+  build-self-hosted:
+    name: 本地 Runner 编译
+    if: inputs.runner_type == 'self-hosted'
+    runs-on: self-hosted
+
+    steps:
+      - name: 检出构建项目
+        uses: actions/checkout@v4
+
+      - name: 检查本地 Runner 环境
+        run: |
+          if [ "$(uname -s)" != "Linux" ]; then
+            echo "本地 Runner 必须运行在 Linux/Ubuntu 或 WSL2 环境。"
+            exit 1
+          fi
+          echo "本地 Runner 检查通过。"
 
       - name: 准备 ImmortalWrt 源码
         env:
