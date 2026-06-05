@@ -68,10 +68,9 @@ if [ "${INCLUDE_MOSDNS_LUCI}" = "true" ]; then
   cp -a "${MOSDNS_LUCI_CACHE}/v2dat" "${MOSDNS_LUCI_PACKAGE_DIR}/v2dat"
 fi
 
-echo "写入默认 LAN IP、root 密码和软件源清理脚本"
-mkdir -p "${SRC_DIR}/files/etc/uci-defaults"
-cp "${ROOT_DIR}/files/etc/uci-defaults/99-h5000m-defaults" \
-  "${SRC_DIR}/files/etc/uci-defaults/99-h5000m-defaults"
+echo "写入默认 LAN IP、root 密码、WAN 优先级和软件源清理脚本"
+mkdir -p "${SRC_DIR}/files"
+cp -a "${ROOT_DIR}/files/." "${SRC_DIR}/files/"
 
 echo "ImmortalWrt 源码已准备完成：${SRC_DIR}"
 echo "当前源码版本：${REF}"

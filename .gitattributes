@@ -4,3 +4,4 @@
 *.yaml text eol=lf
 *.patch text eol=lf
 files/etc/uci-defaults/* text eol=lf
+files/etc/hotplug.d/**/* text eol=lf

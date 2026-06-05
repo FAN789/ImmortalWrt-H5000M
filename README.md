@@ -78,7 +78,7 @@ bash ./scripts/prepare-source.sh v24.10.6
 - `.github/workflows/build.yml`：手动触发的 GitHub Actions 构建流程。
 - `configs/h5000m.seed`：H5000M 基础配置。
 - `files/etc/uci-defaults/99-h5000m-defaults`：默认 LAN IP、root 密码、WiFi
-  密码、WAN/5G 优先级和软件源清理。
+  密码、WAN/5G 优先级、接口热插拔修正和软件源清理。
 - `patches/optional/`：兼容时才应用的可选补丁。
 - `scripts/prepare-source.sh`：拉取 ImmortalWrt、添加 feeds、写入配置。
 - `scripts/apply-h5000m.py`：应用 H5000M 设备适配。
@@ -90,7 +90,8 @@ bash ./scripts/prepare-source.sh v24.10.6
 - WiFi 名称：保留默认 `ImmortalWrt`
 - WiFi 密码：`1234567890`
 - WAN 网线优先：`wan`/`wan6` metric 为 `10`
-- 5G SIM 备用：`eth2` 对应接口改名为 `wan5g`/`wan5g6`，metric 为 `50`
+- 5G SIM 备用：保留 QModem 生成的 `1_1`/`1_1v6`，metric 为 `50`
+- 接口热插拔时自动清理旧的 `wan5g`/`wan5g6` 残留，避免重复接口
 - 首次启动时删除固件内的 QModem 和 video 软件源条目。
 
 ## 可选软件包

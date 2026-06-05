@@ -1,0 +1,33 @@
+#!/bin/sh
+
+[ "${ACTION}" = "ifup" ] || [ "${ACTION}" = "ifupdate" ] || exit 0
+
+case "${INTERFACE}" in
+	wan|wan6|1_1|1_1v6)
+		;;
+	*)
+		exit 0
+		;;
+esac
+
+logger -t h5000m-wan-priority "同步 WAN 与 5G 备用出口优先级"
+
+uci -q set network.wan.metric='10'
+uci -q set network.wan6.metric='10'
+uci -q set network.1_1.metric='50'
+uci -q set network.1_1v6.metric='50'
+uci -q delete network.wan5g
+uci -q delete network.wan5g6
+uci -q commit network
+
+for zone in $(uci -q show firewall | sed -n 's/^\(firewall\.[^.]*\)=zone$/\1/p'); do
+	if [ "$(uci -q get "${zone}.name")" = "wan" ]; then
+		uci -q del_list "${zone}.network=wan5g"
+		uci -q del_list "${zone}.network=wan5g6"
+		uci -q del_list "${zone}.network=1_1"
+		uci -q del_list "${zone}.network=1_1v6"
+		uci -q add_list "${zone}.network=1_1"
+		uci -q add_list "${zone}.network=1_1v6"
+	fi
+done
+uci -q commit firewall

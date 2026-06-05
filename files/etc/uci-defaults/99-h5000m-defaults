@@ -8,28 +8,11 @@ uci -q set network.lan.netmask='255.255.255.0'
 logger -t h5000m-defaults "优化 WAN 与 5G 备用出口"
 uci -q set network.wan.metric='10'
 uci -q set network.wan6.metric='10'
+uci -q delete network.wan5g
+uci -q delete network.wan5g6
 
-if uci -q show network.1_1 >/dev/null 2>&1; then
-	uci -q rename network.1_1='wan5g'
-fi
-
-if uci -q show network.1_1v6 >/dev/null 2>&1; then
-	uci -q rename network.1_1v6='wan5g6'
-fi
-
-if [ -e /sys/class/net/eth2 ] || uci -q show network.wan5g >/dev/null 2>&1; then
-	uci -q set network.wan5g='interface'
-	uci -q set network.wan5g.proto='dhcp'
-	uci -q set network.wan5g.device='eth2'
-	uci -q set network.wan5g.ifname='eth2'
-	uci -q set network.wan5g.metric='50'
-
-	uci -q set network.wan5g6='interface'
-	uci -q set network.wan5g6.proto='dhcpv6'
-	uci -q set network.wan5g6.device='@wan5g'
-	uci -q set network.wan5g6.ifname='@wan5g'
-	uci -q set network.wan5g6.metric='50'
-fi
+uci -q set network.1_1.metric='50'
+uci -q set network.1_1v6.metric='50'
 uci -q commit network
 
 logger -t h5000m-defaults "将 5G 备用出口加入 WAN 防火墙区域"
@@ -39,8 +22,8 @@ for zone in $(uci -q show firewall | sed -n 's/^\(firewall\.[^.]*\)=zone$/\1/p')
 		uci -q del_list "${zone}.network=1_1v6"
 		uci -q del_list "${zone}.network=wan5g"
 		uci -q del_list "${zone}.network=wan5g6"
-		uci -q add_list "${zone}.network=wan5g"
-		uci -q add_list "${zone}.network=wan5g6"
+		uci -q add_list "${zone}.network=1_1"
+		uci -q add_list "${zone}.network=1_1v6"
 	fi
 done
 uci -q commit firewall
