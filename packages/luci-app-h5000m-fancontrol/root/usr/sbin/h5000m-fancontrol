@@ -71,7 +71,7 @@ temp_label() {
 }
 
 print_temp_status() {
-	local file label lower value count cpu wifi_count phy_count other_count
+	local file label lower value count wifi_count phy_count other_count
 	local cpu_temp wifi1_temp wifi2_temp phy_temp other_temp
 	local first_temp second_temp third_temp
 
@@ -135,7 +135,7 @@ find_module_temp() {
 
 	for file in /tmp/qmodem* /tmp/*qmodem* /var/run/qmodem* /var/run/*qmodem*; do
 		[ -f "${file}" ] || continue
-		value="$(grep -Eoi '(temp|temperature|温度)[^0-9-]*-?[0-9]+' "${file}" 2>/dev/null | head -n 1 | grep -Eo -- '-?[0-9]+' | tail -n 1)"
+		value="$(grep -Eoi '(temp|temperature)[^0-9-]*-?[0-9]+' "${file}" 2>/dev/null | head -n 1 | grep -Eo -- '-?[0-9]+' | tail -n 1)"
 		[ -n "${value}" ] || continue
 		echo "${value}"
 		return 0
@@ -171,6 +171,26 @@ calc_auto_pwm() {
 	echo $((min + (temp - low) * (max - min) / (high - low)))
 }
 
+print_settings() {
+	local enabled mode manual min max low high
+
+	enabled="$(uci -q get h5000m_fancontrol.settings.enabled || echo 1)"
+	mode="$(uci -q get h5000m_fancontrol.settings.mode || echo auto)"
+	manual="$(uci -q get h5000m_fancontrol.settings.manual_pwm || echo 160)"
+	min="$(uci -q get h5000m_fancontrol.settings.min_pwm || echo 80)"
+	max="$(uci -q get h5000m_fancontrol.settings.max_pwm || echo 255)"
+	low="$(uci -q get h5000m_fancontrol.settings.low_temp || echo 45)"
+	high="$(uci -q get h5000m_fancontrol.settings.high_temp || echo 70)"
+
+	echo "enabled=${enabled}"
+	echo "mode=${mode}"
+	echo "manual_pwm=${manual}"
+	echo "min_pwm=${min}"
+	echo "max_pwm=${max}"
+	echo "low_temp=${low}"
+	echo "high_temp=${high}"
+}
+
 apply_once() {
 	local enabled mode manual min max low high pwm temp_file temp temp_c value
 
@@ -184,7 +204,7 @@ apply_once() {
 	[ "${high}" -le "${low}" ] && high=$((low + 1))
 
 	pwm="$(find_pwm)" || {
-		logger -t h5000m-fancontrol "未找到 PWM 风扇控制节点"
+		logger -t h5000m-fancontrol "pwm node not found"
 		return 1
 	}
 
@@ -194,7 +214,7 @@ apply_once() {
 		value="${manual}"
 	else
 		temp_file="$(find_temp)" || {
-			logger -t h5000m-fancontrol "未找到温度读取节点"
+			logger -t h5000m-fancontrol "temperature node not found"
 			return 1
 		}
 		temp="$(cat "${temp_file}" 2>/dev/null || echo 0)"
@@ -204,7 +224,7 @@ apply_once() {
 
 	value="$(clamp_pwm "${value}")"
 	echo "${value}" > "${pwm}"
-	logger -t h5000m-fancontrol "设置风扇 PWM=${value}"
+	logger -t h5000m-fancontrol "set fan pwm=${value}"
 }
 
 case "${1:-apply}" in
@@ -215,6 +235,7 @@ case "${1:-apply}" in
 		pwm="$(find_pwm 2>/dev/null || true)"
 		fan="$(find_fan_rpm 2>/dev/null || true)"
 		temp="$(find_temp 2>/dev/null || true)"
+		print_settings
 		echo "pwm=${pwm:-}"
 		[ -n "${pwm:-}" ] && echo "pwm_value=$(cat "${pwm}" 2>/dev/null || true)"
 		echo "fan=${fan:-}"
@@ -232,7 +253,7 @@ case "${1:-apply}" in
 		print_temp_status
 		;;
 	*)
-		echo "用法：$0 {apply|status}"
+		echo "Usage: $0 {apply|status}"
 		exit 1
 		;;
 esac

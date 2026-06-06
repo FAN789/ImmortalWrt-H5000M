@@ -24,6 +24,16 @@ return view.extend({
 		return data;
 	},
 
+	toNum: function(value, fallback) {
+		var n = parseInt(value, 10);
+
+		return isNaN(n) ? fallback : n;
+	},
+
+	clamp: function(value, min, max) {
+		return Math.max(min, Math.min(max, value));
+	},
+
 	formatTemp: function(value) {
 		return value ? _('%s °C').format(value) : _('未知');
 	},
@@ -46,20 +56,30 @@ return view.extend({
 		]);
 	},
 
+	styleNode: function() {
+		return E('style', {}, [
+			'.h5000m-fan-status,.h5000m-fan-curve{margin-bottom:16px}',
+			'.h5000m-fan-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}',
+			'.h5000m-fan-card{border:1px solid var(--border-color-medium,#d8d8d8);border-radius:8px;padding:12px;background:var(--background-color-high,#fff);min-height:76px}',
+			'.h5000m-fan-card-title{font-size:12px;color:var(--text-color-medium,#666);margin-bottom:6px}',
+			'.h5000m-fan-card-value{font-size:22px;line-height:1.2;font-weight:600;color:var(--text-color-high,#222);word-break:break-word}',
+			'.h5000m-fan-card-hint{font-size:11px;color:var(--text-color-low,#888);margin-top:6px;word-break:break-word}',
+			'.h5000m-fan-note{margin-top:10px;color:var(--text-color-medium,#666)}',
+			'.h5000m-fan-curve-box{border:1px solid var(--border-color-medium,#d8d8d8);border-radius:8px;background:var(--background-color-high,#fff);padding:12px}',
+			'.h5000m-fan-curve svg{width:100%;height:auto;display:block}',
+			'.h5000m-fan-legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:8px;color:var(--text-color-medium,#666);font-size:12px}',
+			'.h5000m-fan-swatch{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}',
+			'.h5000m-fan-slider{display:flex;align-items:center;gap:10px;max-width:460px}',
+			'.h5000m-fan-slider input[type="range"]{flex:1;min-width:180px}',
+			'.h5000m-fan-slider input[type="number"]{width:82px}'
+		].join(''));
+	},
+
 	statusPanel: function(data) {
 		var pwmHint = data.pwm ? data.pwm.replace('/sys/class/hwmon/', '') : _('未找到 PWM 节点');
 		var fanHint = data.fan_feedback === '0' ? _('当前 pwmfan 驱动未暴露 fan_input') : (data.fan || '');
 
 		return E('div', { 'class': 'h5000m-fan-status' }, [
-			E('style', {}, [
-				'.h5000m-fan-status{margin-bottom:16px}',
-				'.h5000m-fan-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}',
-				'.h5000m-fan-card{border:1px solid var(--border-color-medium,#d8d8d8);border-radius:8px;padding:12px;background:var(--background-color-high,#fff);min-height:76px}',
-				'.h5000m-fan-card-title{font-size:12px;color:var(--text-color-medium,#666);margin-bottom:6px}',
-				'.h5000m-fan-card-value{font-size:22px;line-height:1.2;font-weight:600;color:var(--text-color-high,#222);word-break:break-word}',
-				'.h5000m-fan-card-hint{font-size:11px;color:var(--text-color-low,#888);margin-top:6px;word-break:break-word}',
-				'.h5000m-fan-note{margin-top:10px;color:var(--text-color-medium,#666)}'
-			].join('')),
 			E('h3', _('当前状态')),
 			E('div', { 'class': 'h5000m-fan-grid' }, [
 				this.statusCard(_('风扇转速'), this.formatRpm(data), fanHint),
@@ -73,6 +93,174 @@ return view.extend({
 				? E('div', { 'class': 'h5000m-fan-note' }, _('当前系统只提供 PWM 控制，没有提供风扇转速反馈节点。'))
 				: null
 		]);
+	},
+
+	curveY: function(pwm, top, height) {
+		return top + (255 - this.clamp(pwm, 0, 255)) * height / 255;
+	},
+
+	curveX: function(temp, minTemp, maxTemp, left, width) {
+		return left + (this.clamp(temp, minTemp, maxTemp) - minTemp) * width / (maxTemp - minTemp);
+	},
+
+	pwmAtTemp: function(temp, low, high, minPwm, maxPwm) {
+		if (temp <= low)
+			return minPwm;
+
+		if (temp >= high)
+			return maxPwm;
+
+		return Math.round(minPwm + (temp - low) * (maxPwm - minPwm) / (high - low));
+	},
+
+	curvePanel: function(data) {
+		var mode = data.mode || 'auto';
+		var low = this.toNum(data.low_temp, 45);
+		var high = this.toNum(data.high_temp, 70);
+		var minPwm = this.toNum(data.min_pwm, 80);
+		var maxPwm = this.toNum(data.max_pwm, 255);
+		var manualPwm = this.toNum(data.manual_pwm, 160);
+		var currentTemp = this.toNum(data.cpu_temp || data.temp_value, NaN);
+		var currentPwm = this.toNum(data.pwm_value, NaN);
+		var left = 42, top = 14, width = 318, height = 142;
+		var tempMin, tempMax, points, marker, manualLine, modeText;
+
+		if (high <= low)
+			high = low + 1;
+
+		tempMin = Math.max(0, low - 20);
+		tempMax = Math.min(120, high + 20);
+
+		if (tempMax <= tempMin)
+			tempMax = tempMin + 1;
+
+		points = [
+			[this.curveX(tempMin, tempMin, tempMax, left, width), this.curveY(minPwm, top, height)],
+			[this.curveX(low, tempMin, tempMax, left, width), this.curveY(minPwm, top, height)],
+			[this.curveX(high, tempMin, tempMax, left, width), this.curveY(maxPwm, top, height)],
+			[this.curveX(tempMax, tempMin, tempMax, left, width), this.curveY(maxPwm, top, height)]
+		].map(function(p) { return p[0].toFixed(1) + ',' + p[1].toFixed(1); }).join(' ');
+
+		if (!isNaN(currentTemp)) {
+			if (isNaN(currentPwm))
+				currentPwm = mode === 'manual' ? manualPwm : this.pwmAtTemp(currentTemp, low, high, minPwm, maxPwm);
+
+			marker = E('circle', {
+				cx: this.curveX(currentTemp, tempMin, tempMax, left, width),
+				cy: this.curveY(currentPwm, top, height),
+				r: 5,
+				fill: '#d14545'
+			});
+		}
+
+		if (mode === 'manual') {
+			manualLine = E('line', {
+				id: 'h5000m-fan-manual-line',
+				x1: left,
+				y1: this.curveY(manualPwm, top, height),
+				x2: left + width,
+				y2: this.curveY(manualPwm, top, height),
+				stroke: '#3b7ddd',
+				'stroke-width': 2,
+				'stroke-dasharray': '6 4'
+			});
+			modeText = _('手动模式：滑杆数值作为固定 PWM 输出。');
+		} else if (mode === 'off') {
+			modeText = _('关闭模式：风扇 PWM 输出为 0。');
+		} else {
+			modeText = _('自动模式：温度低于低温阈值使用最低 PWM，高于高温阈值使用最高 PWM，中间线性递增。');
+		}
+
+		return E('div', { 'class': 'h5000m-fan-curve' }, [
+			E('h3', _('风扇曲线')),
+			E('div', { 'class': 'h5000m-fan-curve-box' }, [
+				E('svg', { viewBox: '0 0 382 184', role: 'img' }, [
+					E('line', { x1: left, y1: top + height, x2: left + width, y2: top + height, stroke: '#999' }),
+					E('line', { x1: left, y1: top, x2: left, y2: top + height, stroke: '#999' }),
+					E('text', { x: 4, y: top + 6, 'font-size': 11, fill: '#666' }, '255'),
+					E('text', { x: 13, y: top + height, 'font-size': 11, fill: '#666' }, '0'),
+					E('text', { x: left, y: top + height + 17, 'font-size': 11, fill: '#666' }, _('%s°C').format(tempMin)),
+					E('text', { x: left + width - 34, y: top + height + 17, 'font-size': 11, fill: '#666' }, _('%s°C').format(tempMax)),
+					E('text', { x: this.curveX(low, tempMin, tempMax, left, width) - 12, y: top + height + 17, 'font-size': 11, fill: '#666' }, _('%s°C').format(low)),
+					E('text', { x: this.curveX(high, tempMin, tempMax, left, width) - 12, y: top + height + 17, 'font-size': 11, fill: '#666' }, _('%s°C').format(high)),
+					E('line', { x1: this.curveX(low, tempMin, tempMax, left, width), y1: top, x2: this.curveX(low, tempMin, tempMax, left, width), y2: top + height, stroke: '#ddd', 'stroke-dasharray': '4 4' }),
+					E('line', { x1: this.curveX(high, tempMin, tempMax, left, width), y1: top, x2: this.curveX(high, tempMin, tempMax, left, width), y2: top + height, stroke: '#ddd', 'stroke-dasharray': '4 4' }),
+					E('polyline', { points: points, fill: 'none', stroke: '#2d8a5f', 'stroke-width': 3, 'stroke-linejoin': 'round' }),
+					manualLine,
+					marker
+				]),
+				E('div', { 'class': 'h5000m-fan-legend' }, [
+					E('span', [ E('span', { 'class': 'h5000m-fan-swatch', style: 'background:#2d8a5f' }), _('自动曲线') ]),
+					mode === 'manual' ? E('span', [ E('span', { 'class': 'h5000m-fan-swatch', style: 'background:#3b7ddd' }), _('手动 PWM') ]) : null,
+					marker ? E('span', [ E('span', { 'class': 'h5000m-fan-swatch', style: 'background:#d14545' }), _('当前状态') ]) : null
+				]),
+				E('div', { 'class': 'h5000m-fan-note' }, modeText)
+			])
+		]);
+	},
+
+	renderManualPwmWidget: function(option) {
+		option.renderWidget = function(section_id, option_index, cfgvalue) {
+			var value = cfgvalue || this.default || '160';
+			var inputId = this.cbid(section_id);
+			var rangeId = inputId + '-range';
+			var numberId = inputId + '-number';
+			var updateCurve = function(next) {
+				var line = document.getElementById('h5000m-fan-manual-line');
+				var pwm = Math.max(0, Math.min(255, parseInt(next, 10) || 0));
+				var y = 14 + (255 - pwm) * 142 / 255;
+
+				if (line) {
+					line.setAttribute('y1', y);
+					line.setAttribute('y2', y);
+				}
+			};
+
+			return E('div', { 'class': 'h5000m-fan-slider' }, [
+				E('input', {
+					id: rangeId,
+					type: 'range',
+					min: '0',
+					max: '255',
+					step: '1',
+					value: value,
+					oninput: function(ev) {
+						var text = document.getElementById(inputId);
+						var number = document.getElementById(numberId);
+
+						if (text)
+							text.value = ev.target.value;
+						if (number)
+							number.value = ev.target.value;
+						updateCurve(ev.target.value);
+					}
+				}),
+				E('input', {
+					id: numberId,
+					type: 'number',
+					min: '0',
+					max: '255',
+					step: '1',
+					value: value,
+					oninput: function(ev) {
+						var range = document.getElementById(rangeId);
+						var text = document.getElementById(inputId);
+
+						if (range)
+							range.value = ev.target.value;
+						if (text)
+							text.value = ev.target.value;
+						updateCurve(ev.target.value);
+					}
+				}),
+				E('input', {
+					id: inputId,
+					name: inputId,
+					type: 'hidden',
+					value: value
+				})
+			]);
+		};
 	},
 
 	render: function(res) {
@@ -99,6 +287,7 @@ return view.extend({
 		o = s.option(form.Value, 'manual_pwm', _('手动 PWM'));
 		o.datatype = 'range(0,255)';
 		o.default = '160';
+		this.renderManualPwmWidget(o);
 
 		o = s.option(form.Value, 'min_pwm', _('最低 PWM'));
 		o.datatype = 'range(0,255)';
@@ -133,7 +322,12 @@ return view.extend({
 		};
 
 		return m.render().then(L.bind(function(node) {
-			return E('div', {}, [ this.statusPanel(status), node ]);
+			return E('div', {}, [
+				this.styleNode(),
+				this.statusPanel(status),
+				this.curvePanel(status),
+				node
+			]);
 		}, this));
 	}
 });
