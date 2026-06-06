@@ -35,7 +35,8 @@ return view.extend({
 				E('tr', [ E('td', _('IPv6 默认出口')), E('td', data.active6 || _('无')) ]),
 				E('tr', [ E('td', _('有线 WAN metric')), E('td', '%s / %s'.format(data.wan_metric || '-', data.wan6_metric || '-')) ]),
 				E('tr', [ E('td', _('5G 模块 metric')), E('td', '%s / %s'.format(data.usb_metric || '-', data.usbv6_metric || '-')) ]),
-				E('tr', [ E('td', _('5G IPv6 默认路由')), E('td', data.usbv6_defaultroute == '1' ? _('开启') : _('关闭')) ])
+				E('tr', [ E('td', _('有线 WAN 默认路由')), E('td', '%s / %s'.format(data.wan_defaultroute == '0' ? _('关闭') : _('开启'), data.wan6_defaultroute == '0' ? _('关闭') : _('开启'))) ]),
+				E('tr', [ E('td', _('5G 模块默认路由')), E('td', '%s / %s'.format(data.usb_defaultroute == '0' ? _('关闭') : _('开启'), data.usbv6_defaultroute == '0' ? _('关闭') : _('开启'))) ])
 			])
 		]);
 	},

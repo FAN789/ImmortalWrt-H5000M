@@ -3,14 +3,18 @@
 mode="$(uci -q get h5000m_netmode.settings.mode || echo wan_first)"
 
 print_status() {
-	local wan_metric wan6_metric usb_metric usbv6_metric usbv6_defaultroute qmodem_metric
+	local wan_metric wan6_metric usb_metric usbv6_metric qmodem_metric
+	local wan_defaultroute wan6_defaultroute usb_defaultroute usbv6_defaultroute
 	local default4 default6 active4 active6
 
 	wan_metric="$(uci -q get network.wan.metric || echo "")"
 	wan6_metric="$(uci -q get network.wan6.metric || echo "")"
 	usb_metric="$(uci -q get network.USB.metric || echo "")"
 	usbv6_metric="$(uci -q get network.USBv6.metric || echo "")"
-	usbv6_defaultroute="$(uci -q get network.USBv6.defaultroute || echo "")"
+	wan_defaultroute="$(uci -q get network.wan.defaultroute || echo 1)"
+	wan6_defaultroute="$(uci -q get network.wan6.defaultroute || echo 1)"
+	usb_defaultroute="$(uci -q get network.USB.defaultroute || echo 1)"
+	usbv6_defaultroute="$(uci -q get network.USBv6.defaultroute || echo 1)"
 	qmodem_metric=''
 	for modem in $(uci -q show qmodem | sed -n 's/^\(qmodem\.[^.]*\)=modem-device$/\1/p'); do
 		qmodem_metric="$(uci -q get "${modem}.metric" || echo "")"
@@ -48,6 +52,9 @@ print_status() {
 	echo "wan6_metric=${wan6_metric}"
 	echo "usb_metric=${usb_metric}"
 	echo "usbv6_metric=${usbv6_metric}"
+	echo "wan_defaultroute=${wan_defaultroute}"
+	echo "wan6_defaultroute=${wan6_defaultroute}"
+	echo "usb_defaultroute=${usb_defaultroute}"
 	echo "usbv6_defaultroute=${usbv6_defaultroute}"
 	echo "qmodem_metric=${qmodem_metric}"
 	echo "active4=${active4}"
@@ -65,12 +72,16 @@ case "${mode}" in
 	modem_first)
 		wan_metric='50'
 		modem_metric='10'
+		wan_defaultroute='0'
+		modem_defaultroute='1'
 		usbv6_defaultroute='1'
 		;;
 	*)
 		mode='wan_first'
 		wan_metric='10'
 		modem_metric='50'
+		wan_defaultroute='1'
+		modem_defaultroute='0'
 		usbv6_defaultroute='0'
 		;;
 esac
@@ -83,6 +94,9 @@ uci -q set network.wan.metric="${wan_metric}"
 uci -q set network.wan6.metric="${wan_metric}"
 uci -q set network.USB.metric="${modem_metric}"
 uci -q set network.USBv6.metric="${modem_metric}"
+uci -q set network.wan.defaultroute="${wan_defaultroute}"
+uci -q set network.wan6.defaultroute="${wan_defaultroute}"
+uci -q set network.USB.defaultroute="${modem_defaultroute}"
 uci -q set network.USBv6.defaultroute="${usbv6_defaultroute}"
 uci -q delete network.wan5g
 uci -q delete network.wan5g6
