@@ -1,6 +1,6 @@
 {
 	"admin/services/h5000m_fancontrol": {
-		"title": "H5000M 风扇控制",
+		"title": "风扇控制",
 		"order": 90,
 		"action": {
 			"type": "view",

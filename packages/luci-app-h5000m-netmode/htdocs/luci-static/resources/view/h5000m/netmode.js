@@ -5,10 +5,46 @@
 'require ui';
 
 return view.extend({
-	render: function() {
-		var m, s, o;
+	load: function() {
+		return fs.exec('/usr/sbin/h5000m-netmode', [ 'status' ]).catch(function() {
+			return { stdout: '' };
+		});
+	},
 
-		m = new form.Map('h5000m_netmode', _('H5000M 出口优先级'));
+	parseStatus: function(res) {
+		var data = {};
+
+		(res.stdout || '').trim().split(/\n/).forEach(function(line) {
+			var pos = line.indexOf('=');
+
+			if (pos > -1)
+				data[line.substring(0, pos)] = line.substring(pos + 1);
+		});
+
+		return data;
+	},
+
+	statusTable: function(data) {
+		var mode = data.mode == 'modem_first' ? _('5G 模块优先') : _('有线 WAN 优先');
+
+		return E('div', { 'class': 'cbi-section' }, [
+			E('h3', _('当前状态')),
+			E('table', { 'class': 'table' }, [
+				E('tr', [ E('td', _('当前模式')), E('td', mode) ]),
+				E('tr', [ E('td', _('IPv4 默认出口')), E('td', data.active4 || _('未知')) ]),
+				E('tr', [ E('td', _('IPv6 默认出口')), E('td', data.active6 || _('无')) ]),
+				E('tr', [ E('td', _('有线 WAN metric')), E('td', '%s / %s'.format(data.wan_metric || '-', data.wan6_metric || '-')) ]),
+				E('tr', [ E('td', _('5G 模块 metric')), E('td', '%s / %s'.format(data.usb_metric || '-', data.usbv6_metric || '-')) ]),
+				E('tr', [ E('td', _('5G IPv6 默认路由')), E('td', data.usbv6_defaultroute == '1' ? _('开启') : _('关闭')) ])
+			])
+		]);
+	},
+
+	render: function(res) {
+		var m, s, o;
+		var status = this.parseStatus(res);
+
+		m = new form.Map('h5000m_netmode', _('路由器出口优先级'));
 		m.description = _('切换有线 WAN 与 5G 模块的默认出口优先级。');
 
 		s = m.section(form.NamedSection, 'settings', 'settings');
@@ -30,6 +66,8 @@ return view.extend({
 			});
 		};
 
-		return m.render();
+		return m.render().then(L.bind(function(node) {
+			return E('div', {}, [ this.statusTable(status), node ]);
+		}, this));
 	}
 });

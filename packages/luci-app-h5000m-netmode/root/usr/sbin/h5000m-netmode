@@ -2,6 +2,65 @@
 
 mode="$(uci -q get h5000m_netmode.settings.mode || echo wan_first)"
 
+print_status() {
+	local wan_metric wan6_metric usb_metric usbv6_metric usbv6_defaultroute qmodem_metric
+	local default4 default6 active4 active6
+
+	wan_metric="$(uci -q get network.wan.metric || echo "")"
+	wan6_metric="$(uci -q get network.wan6.metric || echo "")"
+	usb_metric="$(uci -q get network.USB.metric || echo "")"
+	usbv6_metric="$(uci -q get network.USBv6.metric || echo "")"
+	usbv6_defaultroute="$(uci -q get network.USBv6.defaultroute || echo "")"
+	qmodem_metric=''
+	for modem in $(uci -q show qmodem | sed -n 's/^\(qmodem\.[^.]*\)=modem-device$/\1/p'); do
+		qmodem_metric="$(uci -q get "${modem}.metric" || echo "")"
+		[ -n "${qmodem_metric}" ] && break
+	done
+	default4="$(ip route show default 2>/dev/null | head -n 1)"
+	default6="$(ip -6 route show default 2>/dev/null | head -n 1)"
+
+	case "${default4}" in
+		*' dev eth1 '*|*' dev wan '*)
+			active4='wan'
+			;;
+		*' dev eth2 '*|*' dev USB '*)
+			active4='USB'
+			;;
+		*)
+			active4=''
+			;;
+	esac
+
+	case "${default6}" in
+		*' dev eth1 '*|*' dev wan6 '*)
+			active6='wan6'
+			;;
+		*' dev eth2 '*|*' dev USBv6 '*)
+			active6='USBv6'
+			;;
+		*)
+			active6=''
+			;;
+	esac
+
+	echo "mode=${mode}"
+	echo "wan_metric=${wan_metric}"
+	echo "wan6_metric=${wan6_metric}"
+	echo "usb_metric=${usb_metric}"
+	echo "usbv6_metric=${usbv6_metric}"
+	echo "usbv6_defaultroute=${usbv6_defaultroute}"
+	echo "qmodem_metric=${qmodem_metric}"
+	echo "active4=${active4}"
+	echo "active6=${active6}"
+	echo "default4=${default4}"
+	echo "default6=${default6}"
+}
+
+if [ "${1:-}" = "status" ]; then
+	print_status
+	exit 0
+fi
+
 case "${mode}" in
 	modem_first)
 		wan_metric='50'

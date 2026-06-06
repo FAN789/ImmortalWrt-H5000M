@@ -5,10 +5,48 @@
 'require ui';
 
 return view.extend({
-	render: function() {
-		var m, s, o;
+	load: function() {
+		return fs.exec('/usr/sbin/h5000m-fancontrol', [ 'status' ]).catch(function() {
+			return { stdout: '' };
+		});
+	},
 
-		m = new form.Map('h5000m_fancontrol', _('H5000M 风扇控制'));
+	parseStatus: function(res) {
+		var data = {};
+
+		(res.stdout || '').trim().split(/\n/).forEach(function(line) {
+			var pos = line.indexOf('=');
+
+			if (pos > -1)
+				data[line.substring(0, pos)] = line.substring(pos + 1);
+		});
+
+		return data;
+	},
+
+	formatTemp: function(value) {
+		return value ? _('%s °C').format(value) : _('未知');
+	},
+
+	statusTable: function(data) {
+		return E('div', { 'class': 'cbi-section' }, [
+			E('h3', _('当前状态')),
+			E('table', { 'class': 'table' }, [
+				E('tr', [ E('td', _('风扇转速')), E('td', data.fan_rpm ? _('%s RPM').format(data.fan_rpm) : _('未知')) ]),
+				E('tr', [ E('td', _('当前 PWM')), E('td', data.pwm_value || _('未知')) ]),
+				E('tr', [ E('td', _('模块温度')), E('td', this.formatTemp(data.module_temp)) ]),
+				E('tr', [ E('td', _('CPU 温度')), E('td', this.formatTemp(data.cpu_temp)) ]),
+				E('tr', [ E('td', _('WiFi 温度 1')), E('td', this.formatTemp(data.wifi1_temp)) ]),
+				E('tr', [ E('td', _('WiFi 温度 2')), E('td', this.formatTemp(data.wifi2_temp)) ])
+			])
+		]);
+	},
+
+	render: function(res) {
+		var m, s, o;
+		var status = this.parseStatus(res);
+
+		m = new form.Map('h5000m_fancontrol', _('风扇控制'));
 		m.description = _('调节 PWM 风扇策略。');
 
 		s = m.section(form.NamedSection, 'settings', 'settings');
@@ -61,6 +99,8 @@ return view.extend({
 			});
 		};
 
-		return m.render();
+		return m.render().then(L.bind(function(node) {
+			return E('div', {}, [ this.statusTable(status), node ]);
+		}, this));
 	}
 });

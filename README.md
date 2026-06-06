@@ -97,7 +97,7 @@ bash ./scripts/prepare-source.sh v24.10.6
 - 接口热插拔时自动清理旧的 `wan5g`/`wan5g6` 残留，避免重复接口
 - 首次启动时删除固件内的 QModem 和 video 软件源条目。
 
-固件内置 `luci-app-h5000m-netmode`，可在 LuCI 的“网络 / H5000M 出口优先级”
+固件内置 `luci-app-h5000m-netmode`，可在 LuCI 的“网络 / 路由器出口优先级”
 中切换：
 
 - 有线 WAN 优先：`wan`/`wan6` metric 为 `10`，`USB`/`USBv6` 和 QModem
@@ -105,12 +105,13 @@ bash ./scripts/prepare-source.sh v24.10.6
 - 5G 模块优先：`USB`/`USBv6` 和 QModem modem-device metric 为 `10`，
   `wan`/`wan6` metric 为 `50`，并开启 `USBv6` 默认路由。
 
-固件内置 `luci-app-h5000m-fancontrol`，可在 LuCI 的“服务 / H5000M 风扇控制”
+固件内置 `luci-app-h5000m-fancontrol`，可在 LuCI 的“服务 / 风扇控制”
 中设置：
 
 - 自动：按温度在最低 PWM 与最高 PWM 之间线性调节。
 - 手动：固定指定 PWM。
 - 关闭：将 PWM 设为 `0`。
+- 页面显示当前风扇转速、PWM、模块温度、CPU 温度和两个 WiFi 温度。
 
 ## 可选软件包
 

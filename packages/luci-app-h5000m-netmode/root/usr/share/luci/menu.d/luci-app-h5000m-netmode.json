@@ -1,6 +1,6 @@
 {
 	"admin/network/h5000m_netmode": {
-		"title": "H5000M 出口优先级",
+		"title": "路由器出口优先级",
 		"order": 90,
 		"action": {
 			"type": "view",
