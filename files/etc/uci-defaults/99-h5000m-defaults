@@ -41,7 +41,7 @@ uci -q commit wireless
 
 logger -t h5000m-defaults "清理固件内的 QModem 和 video apk 软件源"
 if [ -f /etc/apk/repositories.d/distfeeds.list ]; then
-	sed -i '/\/qmodem\//d;/ qmodem[ _-]/d;/ qmodem$/d;/\/video\//d' /etc/apk/repositories.d/distfeeds.list
+	sed -i '/\/qmodem\//d;/ qmodem[ _-]/d;/ qmodem$/d;/\/small_package\//d;/ small_package[ _-]/d;/ small_package$/d;/\/video\//d' /etc/apk/repositories.d/distfeeds.list
 fi
 
 exit 0
