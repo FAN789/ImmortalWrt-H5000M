@@ -51,7 +51,7 @@ return view.extend({
 		var m, s, o;
 		var status = this.parseStatus(res);
 
-		m = new form.Map('h5000m_netmode', _('路由器出口优先级'));
+		m = new form.Map('h5000m_netmode', _('出口优先级'));
 		m.description = _('切换有线 WAN 与 5G 模块的默认出口优先级。');
 
 		s = m.section(form.NamedSection, 'settings', 'settings');

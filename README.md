@@ -80,7 +80,7 @@ make -j"$(nproc)"
 - 5G SIM 备用：QModem 生成的 `USB`/`USBv6` metric 为 `50`
 - 首次启动时清理固件内的 QModem 和 video 软件源条目
 
-内置 `luci-app-h5000m-netmode`，可在 LuCI 的“网络 / 路由器出口优先级”中切换有线 WAN 和 5G 模块的优先级。
+内置 `luci-app-h5000m-netmode`，可在 LuCI 的“网络 / 出口优先级”中切换有线 WAN 和 5G 模块的优先级。
 
 内置 `luci-app-h5000m-fancontrol`，可在 LuCI 的“服务 / 风扇控制”中设置自动、手动和关闭模式，并显示 PWM、模块温度、CPU 温度和 WiFi 温度。
 
