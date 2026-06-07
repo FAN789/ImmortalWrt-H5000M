@@ -10,6 +10,7 @@ INCLUDE_PASSWALL="${INCLUDE_PASSWALL:-false}"
 INCLUDE_MOSDNS="${INCLUDE_MOSDNS:-false}"
 INCLUDE_UPNP="${INCLUDE_UPNP:-false}"
 INCLUDE_HOMEPROXY="${INCLUDE_HOMEPROXY:-false}"
+INCLUDE_VNSTAT="${INCLUDE_VNSTAT:-false}"
 
 if [ ! -f "${CONFIG_FILE}" ]; then
   echo "未找到 OpenWrt 配置文件：${CONFIG_FILE}"
@@ -105,6 +106,16 @@ if [ "${INCLUDE_MOSDNS}" = "true" ]; then
   echo "启用 MosDNS"
   append_config <<'EOF'
 CONFIG_PACKAGE_luci-app-mosdns=y
+EOF
+fi
+
+if [ "${INCLUDE_VNSTAT}" = "true" ]; then
+  echo "启用 vnStat2"
+  append_config <<'EOF'
+CONFIG_PACKAGE_luci-app-vnstat2=y
+CONFIG_PACKAGE_luci-i18n-vnstat2-zh-cn=y
+CONFIG_PACKAGE_vnstat2=y
+CONFIG_PACKAGE_vnstati2=y
 EOF
 fi
 

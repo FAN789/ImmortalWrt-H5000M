@@ -19,7 +19,7 @@ https://github.com/openwrt/openwrt/pull/21398
 1. 拉取指定版本的 OpenWrt 官方源码。
 2. 应用 H5000M 设备适配：DTS、镜像定义、网络、升级、WiFi MAC、LED、风扇和默认配置。
 3. 使用 `configs/h5000m.seed` 选择 MediaTek Filogic / H5000M 目标。
-4. 按 workflow 选项集成 QModem、PassWall、MosDNS、UPnP、HomeProxy。
+4. 按 workflow 选项集成 QModem、PassWall、MosDNS、UPnP、HomeProxy、vnStat2。
 5. 通过 GitHub Actions 或本地 Linux runner 编译固件。
 
 ## 插件来源
@@ -29,6 +29,7 @@ https://github.com/openwrt/openwrt/pull/21398
 - MosDNS / luci-app-mosdns：`kenzok8/small-package`
 - HomeProxy：`kenzok8/small-package`
 - UPnP：OpenWrt 官方 feeds
+- vnStat2 / luci-app-vnstat2：OpenWrt 官方 feeds
 
 勾选 PassWall、MosDNS、HomeProxy 任意一个时，会自动添加 `kenzok8/small-package`。
 
@@ -45,6 +46,7 @@ https://github.com/openwrt/openwrt/pull/21398
 - `passwall`: 默认开启
 - `homeproxy`: 默认关闭
 - `mosdns`: 默认开启，勾选 luci-app-mosdns，相关依赖由软件包自动带入
+- `vnstat`: 默认开启，勾选 luci-app-vnstat2、vnstat2、vnstati2，用于累计流量统计
 - `create_release`: 默认开启
 - `make_jobs`: 留空，或填写 `4`、`8` 这类线程数
 

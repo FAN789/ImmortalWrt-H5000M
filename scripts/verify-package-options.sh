@@ -10,6 +10,7 @@ INCLUDE_PASSWALL="${INCLUDE_PASSWALL:-false}"
 INCLUDE_MOSDNS="${INCLUDE_MOSDNS:-false}"
 INCLUDE_UPNP="${INCLUDE_UPNP:-false}"
 INCLUDE_HOMEPROXY="${INCLUDE_HOMEPROXY:-false}"
+INCLUDE_VNSTAT="${INCLUDE_VNSTAT:-false}"
 
 missing=0
 
@@ -112,6 +113,13 @@ fi
 
 if [ "${INCLUDE_MOSDNS}" = "true" ]; then
   require_config "CONFIG_PACKAGE_luci-app-mosdns"
+fi
+
+if [ "${INCLUDE_VNSTAT}" = "true" ]; then
+  require_config "CONFIG_PACKAGE_luci-app-vnstat2"
+  optional_config "CONFIG_PACKAGE_luci-i18n-vnstat2-zh-cn"
+  require_config "CONFIG_PACKAGE_vnstat2"
+  require_config "CONFIG_PACKAGE_vnstati2"
 fi
 
 if [ "${missing}" -ne 0 ]; then
