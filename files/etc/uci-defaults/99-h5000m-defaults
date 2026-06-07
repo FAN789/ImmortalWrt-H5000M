@@ -1,5 +1,7 @@
 #!/bin/sh
 
+[ -f /lib/functions/system.sh ] && . /lib/functions/system.sh
+
 logger -t h5000m-defaults "Set default timezone and locale defaults"
 uci -q set system.@system[0].zonename='Asia/Shanghai'
 uci -q set system.@system[0].timezone='CST-8'
@@ -49,13 +51,34 @@ mac_add() {
 		$(( (value >> 16) & 0xff )) $(( (value >> 8) & 0xff )) $(( value & 0xff ))
 }
 
+get_base_mac() {
+	local base
+
+	base="$(read_uboot_env ethaddr || true)"
+	if valid_mac "${base}"; then
+		echo "${base}"
+		return 0
+	fi
+
+	if type macaddr_generate_from_mmc_cid >/dev/null 2>&1; then
+		base="$(macaddr_generate_from_mmc_cid mmcblk0 2>/dev/null || true)"
+		if valid_mac "${base}"; then
+			logger -t h5000m-defaults "U-Boot ethaddr is invalid, using stable MAC derived from eMMC CID"
+			echo "${base}"
+			return 0
+		fi
+	fi
+
+	return 1
+}
+
 logger -t h5000m-defaults "Set default LAN address to 192.168.10.1"
 uci -q set network.lan.proto='static'
 uci -q set network.lan.ipaddr='192.168.10.1'
 uci -q set network.lan.netmask='255.255.255.0'
 
 logger -t h5000m-defaults "Apply MAC addresses derived from U-Boot ethaddr"
-lan_mac="$(read_uboot_env ethaddr || true)"
+lan_mac="$(get_base_mac || true)"
 if valid_mac "${lan_mac}"; then
 	wan_mac="$(mac_add "${lan_mac}" 1)"
 	wifi24_mac="$(mac_add "${lan_mac}" 2)"
@@ -70,7 +93,7 @@ if valid_mac "${lan_mac}"; then
 	uci -q set network.wan.macaddr="${wan_mac}"
 	uci -q commit network
 else
-	logger -t h5000m-defaults "U-Boot ethaddr is missing or invalid, keeping system defaults"
+	logger -t h5000m-defaults "No valid U-Boot or eMMC CID MAC source found, keeping system defaults"
 fi
 
 logger -t h5000m-defaults "Write default H5000M QModem slot"

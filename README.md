@@ -15,7 +15,7 @@ https://github.com/openwrt/openwrt/pull/21398
 - 官方 PR 当前只把两个 WiFi 指示灯交给 OpenWrt 管理，其他 LED 可能由硬件或厂商服务控制。本项目保持官方 LED 配置，不再额外添加 `pwm_led`。
 - 官方 PR 的 `factory` 分区读取方式是从 `mmcblk0p2` 的 `eeprom@0` 读取 `0x1e00` 字节作为 WiFi EEPROM，没有在 `factory` 分区定义有线 MAC。
 - 你当前实机反馈的 `/dev/mmcblk0p2` 内容为全 0，因此即使使用官方 PR 的 EEPROM 读取方式，WiFi 校准仍可能加载失败。这个问题后续需要继续对照官方固件确认校准数据来源，不建议盲目自动写入。
-- MAC 地址默认以 `/dev/mmcblk0p1` 的 U-Boot 环境变量 `ethaddr` 为基准连续派生：ETH0 使用 `base + 0`，ETH1 使用 `base + 1`，2.4G WiFi 使用 `base + 2`，5G WiFi 使用 `base + 3`。
+- MAC 地址默认以 `/dev/mmcblk0p1` 的 U-Boot 环境变量 `ethaddr` 为基准连续派生；如果 U-Boot 环境失效，则使用 eMMC CID 生成稳定本地 MAC 作为二级兜底。ETH0 使用 `base + 0`，ETH1 使用 `base + 1`，2.4G WiFi 使用 `base + 2`，5G WiFi 使用 `base + 3`。
 
 ## 项目做什么
 
@@ -83,7 +83,7 @@ make -j"$(nproc)"
 - WiFi 名称：`H5000M`，默认开启
 - WiFi 密码：`1234567890`
 - WiFi 区域：`CN`
-- MAC 派生：ETH0 使用 U-Boot `ethaddr`，ETH1 / 2.4G WiFi / 5G WiFi 分别使用 `ethaddr + 1/+2/+3`
+- MAC 派生：优先使用 U-Boot `ethaddr`，失效时使用 eMMC CID 稳定兜底；ETH1 / 2.4G WiFi / 5G WiFi 分别使用 `base + 1/+2/+3`
 - 有线 WAN 优先：`wan` / `wan6` metric 为 `10`
 - 5G SIM 备用：QModem 生成的 `USB` / `USBv6` metric 为 `50`
 - 首次启动时清理固件内的 QModem、small_package 和 video 软件源条目
