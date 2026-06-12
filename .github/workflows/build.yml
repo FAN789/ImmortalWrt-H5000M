@@ -190,8 +190,8 @@ jobs:
     runs-on: [self-hosted, Linux, X64, openwrt-h5000m]
     env:
       USE_CCACHE: "1"
-      CCACHE_DIR: /home/builder/openwrt-h5000m-cache/ccache
-      DL_DIR: /home/builder/openwrt-h5000m-cache/dl
+      CCACHE_DIR: ${{ github.workspace }}/../openwrt-h5000m-cache/ccache
+      DL_DIR: ${{ github.workspace }}/../openwrt-h5000m-cache/dl
 
     steps:
       - name: 检出项目
