@@ -23,6 +23,7 @@ append_config() {
 }
 
 append_config <<'EOF'
+CONFIG_BUILD_LOG=y
 CONFIG_LUCI_LANG_zh_Hans=y
 CONFIG_PACKAGE_luci-light=y
 CONFIG_PACKAGE_luci-mod-admin-full=y

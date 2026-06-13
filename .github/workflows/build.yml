@@ -154,7 +154,27 @@ jobs:
       - name: 输出失败详情
         if: ${{ failure() && steps.compile.outcome == 'failure' }}
         working-directory: openwrt
-        run: make -j1 V=s
+        run: |
+          echo "编译失败，输出 OpenWrt 构建日志摘要。"
+          if [ -d logs ]; then
+            find logs -type f | sort
+            find logs -type f | sort | while read -r log; do
+              echo "::group::${log}"
+              tail -n 240 "${log}" || true
+              echo "::endgroup::"
+            done
+          else
+            echo "未找到 logs 目录，回退执行单线程详细编译。"
+            timeout 45m make -j1 V=s || true
+          fi
+
+      - name: 上传失败日志
+        if: ${{ failure() && steps.compile.outcome == 'failure' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: openwrt-H5000M-build-logs-${{ github.run_number }}
+          path: openwrt/logs/**
+          if-no-files-found: ignore
 
       - name: 清理无关启动文件
         working-directory: openwrt
